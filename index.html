@@ -47,15 +47,6 @@
             pointer-events: none;
         }
         
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); }
-            50% { transform: translateY(-20px) translateX(10px); }
-        }
-        
-        .animate-float {
-            animation: float 8s ease-in-out infinite;
-        }
-        
         .glass-dark {
             background: rgba(15, 15, 15, 0.8);
             backdrop-filter: blur(20px);
@@ -106,7 +97,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo } = React;
 
         const PlayIcon = () => (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -209,22 +200,24 @@
 
             const progress = ((workTime - timeLeft) / workTime) * 100;
 
-            // Generate random positions for floating elements
-            const floatingElements = Array.from({ length: 25 }, (_, i) => ({
-                id: i,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                width: `${50 + Math.random() * 150}px`,
-                height: `${50 + Math.random() * 150}px`,
-                delay: `${Math.random() * 8}s`
-            }));
+            // Generate FIXED positions for floating elements (usando useMemo para que no cambien)
+            const floatingElements = React.useMemo(() => 
+                Array.from({ length: 25 }, (_, i) => ({
+                    id: i,
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    width: `${50 + Math.random() * 150}px`,
+                    height: `${50 + Math.random() * 150}px`
+                })), []
+            );
 
-            const floatingDots = Array.from({ length: 40 }, (_, i) => ({
-                id: i,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                delay: `${Math.random() * 8}s`
-            }));
+            const floatingDots = React.useMemo(() =>
+                Array.from({ length: 40 }, (_, i) => ({
+                    id: i,
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`
+                })), []
+            );
 
             return (
                 <div className="min-h-screen tech-bg grid-pattern flex items-center justify-center p-6 relative">
@@ -232,13 +225,12 @@
                     {floatingElements.map(el => (
                         <div
                             key={`rect-${el.id}`}
-                            className="floating-rect animate-float"
+                            className="floating-rect"
                             style={{
                                 left: el.left,
                                 top: el.top,
                                 width: el.width,
-                                height: el.height,
-                                animationDelay: el.delay
+                                height: el.height
                             }}
                         />
                     ))}
@@ -247,11 +239,10 @@
                     {floatingDots.map(dot => (
                         <div
                             key={`dot-${dot.id}`}
-                            className="floating-dot animate-float"
+                            className="floating-dot"
                             style={{
                                 left: dot.left,
-                                top: dot.top,
-                                animationDelay: dot.delay
+                                top: dot.top
                             }}
                         />
                     ))}
