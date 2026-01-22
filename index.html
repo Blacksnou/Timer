@@ -134,6 +134,70 @@
             const [elapsedTime, setElapsedTime] = useState(0);
 
             const audioContextRef = useRef(null);
+            const startTimeRef = useRef(null);
+            const lastUpdateRef = useRef(Date.now());
+
+            // Actualizar título de la pestaña con el tiempo
+            useEffect(() => {
+                document.title = `${formatTime(timeLeft)} - Timer`;
+            }, [timeLeft]);
+
+            // Sistema híbrido: setInterval + verificación de tiempo real
+            useEffect(() => {
+                let interval;
+
+                if (isRunning) {
+                    // Guardar momento de inicio
+                    if (!startTimeRef.current) {
+                        startTimeRef.current = Date.now() - ((workTime - timeLeft) * 1000);
+                    }
+
+                    interval = setInterval(() => {
+                        const now = Date.now();
+                        const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
+                        const remaining = workTime - totalElapsed;
+
+                        if (remaining <= 0) {
+                            // Timer completado
+                            createBeep();
+                            setTotalWorkTime(t => t + workTime);
+                            setCurrentRound(r => r + 1);
+                            setTimeLeft(workTime);
+                            setElapsedTime(prev => prev + workTime);
+                            startTimeRef.current = Date.now(); // Nuevo ciclo
+                        } else {
+                            setTimeLeft(remaining);
+                            setElapsedTime(totalElapsed);
+                        }
+
+                        lastUpdateRef.current = now;
+                    }, 250); // Actualizar cada 250ms para más precisión
+                }
+
+                return () => {
+                    if (interval) clearInterval(interval);
+                };
+            }, [isRunning, workTime]);
+
+            // Detectar cuando la pestaña vuelve a estar activa
+            useEffect(() => {
+                const handleVisibilityChange = () => {
+                    if (!document.hidden && isRunning && startTimeRef.current) {
+                        // Forzar actualización inmediata al volver
+                        const now = Date.now();
+                        const totalElapsed = Math.floor((now - startTimeRef.current) / 1000);
+                        const remaining = workTime - totalElapsed;
+                        
+                        if (remaining > 0) {
+                            setTimeLeft(remaining);
+                            setElapsedTime(totalElapsed);
+                        }
+                    }
+                };
+
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }, [isRunning, workTime]);
 
             // Guardar duración cuando cambie
             useEffect(() => {
@@ -159,28 +223,14 @@
                 oscillator.stop(ctx.currentTime + 0.15);
             };
 
-            useEffect(() => {
-                let interval = null;
-
-                if (isRunning) {
-                    interval = setInterval(() => {
-                        setTimeLeft(prev => {
-                            if (prev === 1) {
-                                createBeep();
-                                setTotalWorkTime(t => t + workTime);
-                                setCurrentRound(r => r + 1);
-                                return workTime;
-                            }
-                            return prev - 1;
-                        });
-                        setElapsedTime(t => t + 1);
-                    }, 1000);
-                }
-
-                return () => clearInterval(interval);
-            }, [isRunning, workTime]);
-
             const toggleTimer = () => {
+                if (!isRunning) {
+                    // Al iniciar, establecer tiempo de inicio
+                    startTimeRef.current = Date.now() - ((workTime - timeLeft) * 1000);
+                } else {
+                    // Al pausar, resetear referencia
+                    startTimeRef.current = null;
+                }
                 setIsRunning(!isRunning);
             };
 
@@ -190,6 +240,7 @@
                 setTimeLeft(workTime);
                 setTotalWorkTime(0);
                 setElapsedTime(0);
+                startTimeRef.current = null;
             };
 
             const formatTime = (seconds) => {
