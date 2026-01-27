@@ -132,6 +132,7 @@
             const [isRunning, setIsRunning] = useState(false);
             const [totalWorkTime, setTotalWorkTime] = useState(0);
             const [elapsedTime, setElapsedTime] = useState(0);
+            const [soundVolume, setSoundVolume] = useState('normal'); // 'normal' o 'fuerte'
 
             const audioContextRef = useRef(null);
             const startTimeRef = useRef(null);
@@ -217,8 +218,13 @@
                 gainNode.connect(ctx.destination);
                 oscillator.frequency.value = 600;
                 oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                
+                // Ajustar volumen según la selección
+                // Normal: 0.3, Fuerte: 13.2 (44 veces más fuerte)
+                const volume = soundVolume === 'fuerte' ? 13.2 : 0.3;
+                gainNode.gain.setValueAtTime(volume, ctx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                
                 oscillator.start(ctx.currentTime);
                 oscillator.stop(ctx.currentTime + 0.15);
             };
@@ -364,7 +370,7 @@
                             </div>
 
                             {/* Duration Input */}
-                            <div>
+                            <div className="mb-8">
                                 <label className="text-xs text-gray-600 mb-3 block tracking-wider">
                                     DURATION
                                 </label>
@@ -387,6 +393,35 @@
                                 </div>
                                 <div className="text-center text-[10px] text-gray-800 mt-3 tracking-wider">
                                     💾 Auto-guardado
+                                </div>
+                            </div>
+
+                            {/* Sound Volume Selection */}
+                            <div>
+                                <label className="text-xs text-gray-600 mb-3 block tracking-wider">
+                                    VOLUMEN
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setSoundVolume('normal')}
+                                        className={`py-3 rounded-lg text-sm tracking-wider transition-all ${
+                                            soundVolume === 'normal'
+                                                ? 'bg-white/20 border-2 border-white/40 text-white'
+                                                : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        NORMAL
+                                    </button>
+                                    <button
+                                        onClick={() => setSoundVolume('fuerte')}
+                                        className={`py-3 rounded-lg text-sm tracking-wider transition-all ${
+                                            soundVolume === 'fuerte'
+                                                ? 'bg-white/20 border-2 border-white/40 text-white'
+                                                : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        FUERTE
+                                    </button>
                                 </div>
                             </div>
                         </div>
